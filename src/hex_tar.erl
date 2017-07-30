@@ -92,6 +92,8 @@ decode_meta(Binary) ->
     String = binary_to_list(Binary),
     {ok, Tokens, _Line} = safe_erl_term:string(String),
     Meta = safe_erl_term:terms(Tokens),
+
+    %% FIXME: avoid binary_to_atom, use whitelist instead
     lists:map(fun({Key, Value}) -> {erlang:binary_to_atom(Key, unicode), Value} end, Meta).
 
 checksum(MetaString, Contents) ->
