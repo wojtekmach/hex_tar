@@ -47,9 +47,5 @@ proplists:get_value("LICENSE", Files).
 Build package tarball using package metadata and files:
 
 ```erlang
-{ok, Tar2, Checksum2} = hex_tar:create(Meta, Files).
-
-%% both Tar2 and Checksum2 matches the ones from the original package:
-Tar2 = Tar.
-Checksum2 = Checksum.
+{ok, {Tar2, Checksum2}} = hex_tar:create(Meta, Files).
 ```

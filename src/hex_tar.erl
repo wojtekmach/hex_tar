@@ -19,6 +19,7 @@
 %% * verify that all required metadata fields are present
 %% * warn on unknown metadata fields
 %% * add function that verifies checksum
+%% * ensure existing hex packages can be rebuilt and will have the same checksum
 %% * add docs
 %% * add typespes
 
