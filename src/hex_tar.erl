@@ -1,5 +1,6 @@
 -module(hex_tar).
 -include("hex_tar.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% create/2, encode_meta/1 based on [1]
 %% binarify/1 based on [2]
@@ -12,7 +13,6 @@
 
 %% TODO:
 %%
-%% * add `create` variant that accepts filenames
 %% * add option to `create` that keeps tarball on disk
 %% * add `unpack` variant that saves files on disk
 %% * verify that all required metadata fields are present
