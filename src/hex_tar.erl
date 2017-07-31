@@ -12,7 +12,6 @@
 
 %% TODO:
 %%
-%% * vendor erl_tar (https://github.com/hexpm/hex/commit/6c0e095cc6810654c5e2d16daef2246fc58742ec)
 %% * add `create` variant that accepts filenames
 %% * add option to `create` that keeps tarball on disk
 %% * add `unpack` variant that saves files on disk
@@ -34,7 +33,7 @@ create(Meta, Files) ->
     {version, Version} = lists:keyfind(version, 1, Meta),
     ContentsPath = io_lib:format("~s-~s-contents.tar.gz", [Name, Version]),
     Path = io_lib:format("~s-~s.tar", [Name, Version]),
-    ok = erl_tar:create(ContentsPath, Files, [compressed]),
+    ok = hex_erl_tar:create(ContentsPath, Files, [compressed]),
 
     {ok, Contents} = file:read_file(ContentsPath),
     MetaString = encode_meta(Meta),
@@ -47,7 +46,7 @@ create(Meta, Files) ->
                  {"contents.tar.gz", Contents}
                 ],
 
-    ok = erl_tar:create(Path, MetaFiles),
+    ok = hex_erl_tar:create(Path, MetaFiles),
     {ok, Tar} = file:read_file(Path),
     file:delete(ContentsPath),
     file:delete(Path),
@@ -57,7 +56,7 @@ unpack(Tar) ->
     {Version, Checksum, MetaString, Contents} = do_unpack(Tar),
     ok = verify_version(Version),
     Meta = decode_meta(MetaString),
-    {ok, Files} = erl_tar:extract({binary, Contents}, [memory, compressed]),
+    {ok, Files} = hex_erl_tar:extract({binary, Contents}, [memory, compressed]),
     {ok, {Checksum, Meta, Files}}.
 
 %%====================================================================
@@ -103,7 +102,7 @@ checksum(MetaString, Contents) ->
     string:to_upper(lists:flatten(io_lib:format("~64.16.0b", [X]))).
 
 do_unpack(Tar) ->
-    {ok, Files} = erl_tar:extract({binary, Tar}, [memory]),
+    {ok, Files} = hex_erl_tar:extract({binary, Tar}, [memory]),
     {"VERSION", Version} = lists:keyfind("VERSION", 1, Files),
     {"CHECKSUM", Checksum} = lists:keyfind("CHECKSUM", 1, Files),
     {"metadata.config", MetaString} = lists:keyfind("metadata.config", 1, Files),
