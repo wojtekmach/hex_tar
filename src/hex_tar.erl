@@ -13,6 +13,7 @@
 
 %% TODO:
 %%
+%% * investigate if we need `{maps, true}` option to create (was in `Hex.Utils.binarify`)
 %% * add option to `create` that keeps tarball on disk
 %% * add `unpack` variant that saves files on disk
 %% * verify that all required metadata fields are present
@@ -83,6 +84,10 @@ binarify(Term) when is_list(Term) ->
         false ->
             [binarify(X) || X <- Term]
     end;
+binarify(Term) when is_map(Term) ->
+    List = maps:to_list(Term),
+    List2 = lists:map(fun({K, V}) -> binarify({K, V}) end, List),
+    maps:from_list(List2);
 binarify({Key, Value}) ->
     {binarify(Key), binarify(Value)};
 binarify(Term) ->
