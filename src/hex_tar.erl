@@ -1,6 +1,7 @@
 -module(hex_tar).
 -include("hex_tar.hrl").
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("kernel/include/file.hrl").
 
 %% create/2, encode_meta/1 based on [1]
 %% binarify/1 based on [2]
@@ -15,7 +16,6 @@
 %%
 %% * investigate if we need `{maps, true}` option to create (was in `Hex.Utils.binarify`)
 %% * add option to `create` that keeps tarball on disk
-%% * add `unpack` variant that saves files on disk
 %% * verify that all required metadata fields are present
 %% * warn on unknown metadata fields
 %% * add function that verifies checksum
@@ -27,8 +27,16 @@
 %% API functions
 %%====================================================================
 
--export([create/2, unpack/1]).
+-export([create/2, unpack/1, unpack/2]).
 
+% Examples:
+%
+%     {ok, {Tar, Checksum}} = hex_tar:create(Meta, ["src/foo.erl"]).
+%
+%     {ok, {Tar, Checksum}} = hex_tar:create(Meta, [{"src/foo.erl", "tmp/foo/src/foo.erl"}]).
+%
+%     {ok, {Tar, Checksum}} = hex_tar:create(Meta, [{"src/foo.erl", "-module(foo)."}])
+%
 create(Meta, Files) ->
     {name, Name} = lists:keyfind(name, 1, Meta),
     {version, Version} = lists:keyfind(version, 1, Meta),
@@ -47,18 +55,25 @@ create(Meta, Files) ->
                  {"contents.tar.gz", Contents}
                 ],
 
-    ok = hex_erl_tar:create(Path, MetaFiles),
+    ok = hex_erl_tar:create(Path, MetaFiles, [verbose]),
     {ok, Tar} = file:read_file(Path),
     file:delete(ContentsPath),
     file:delete(Path),
     {ok, {Tar, Checksum}}.
 
-unpack(Tar) ->
+unpack({binary, Tar}) ->
     {Version, Checksum, MetaString, Contents} = do_unpack(Tar),
     ok = verify_version(Version),
     Meta = decode_meta(MetaString),
     {ok, Files} = hex_erl_tar:extract({binary, Contents}, [memory, compressed]),
     {ok, {Checksum, Meta, Files}}.
+
+unpack({binary, Tar}, [{destination, Destination}]) ->
+    {Version, Checksum, MetaString, Contents} = do_unpack(Tar),
+    ok = verify_version(Version),
+    Meta = decode_meta(MetaString),
+    ok = hex_erl_tar:extract({binary, Contents}, [compressed, {cwd, Destination}]),
+    {ok, {Checksum, Meta}}.
 
 %%====================================================================
 %% Internal functions

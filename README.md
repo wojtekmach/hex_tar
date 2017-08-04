@@ -24,7 +24,7 @@ $ rebar3 shell
 ```erlang
 Url = "https://repo.hex.pm/tarballs/mime-1.1.0.tar",
 {ok, {{_, 200, _}, _Headers, Tar}} = httpc:request(get, {Url, []}, [], [{body_format, binary}]),
-{ok, {Checksum, Meta, Files}} = hex_tar:unpack(Tar).
+{ok, {Checksum, Meta, Files}} = hex_tar:unpack({binary, Tar}).
 ```
 
 Inspect package metadata:
