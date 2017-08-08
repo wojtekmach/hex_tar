@@ -1,3 +1,0 @@
--define(VERSION, <<"3">>).
--define(METADATA_FIELDS, [name, elixir, version, app, description, files, licenses, maintainers, links, requirements]).
--define(REQUIREMENT_FIELDS, [app, optional, requirement, repository]).

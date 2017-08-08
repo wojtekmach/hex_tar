@@ -1,7 +1,10 @@
 -module(hex_tar).
--include("hex_tar.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("kernel/include/file.hrl").
+
+-define(VERSION, <<"3">>).
+-define(METADATA_FIELDS, [name, elixir, version, app, description, files, licenses, maintainers, links, requirements]).
+-define(REQUIREMENT_FIELDS, [app, optional, requirement, repository]).
 
 %% create/2, encode_meta/1 based on [1]
 %% binarify/1 based on [2]
