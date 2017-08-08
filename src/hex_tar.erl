@@ -65,16 +65,12 @@ create(Meta, Files) ->
     {ok, {Tar, Checksum}}.
 
 unpack({binary, Tar}) ->
-    {Version, Checksum, MetaString, Contents} = do_unpack(Tar),
-    ok = verify_version(Version),
-    Meta = decode_meta(MetaString),
+    {Checksum, Meta, Contents} = do_unpack(Tar),
     {ok, Files} = hex_erl_tar:extract({binary, Contents}, [memory, compressed]),
     {ok, {Checksum, Meta, Files}}.
 
 unpack({binary, Tar}, [{destination, Destination}]) ->
-    {Version, Checksum, MetaString, Contents} = do_unpack(Tar),
-    ok = verify_version(Version),
-    Meta = decode_meta(MetaString),
+    {Checksum, Meta, Contents} = do_unpack(Tar),
     ok = hex_erl_tar:extract({binary, Contents}, [compressed, {cwd, Destination}]),
     {ok, {Checksum, Meta}}.
 
@@ -131,7 +127,9 @@ do_unpack(Tar) ->
     {"metadata.config", MetaString} = lists:keyfind("metadata.config", 1, Files),
     {"contents.tar.gz", Contents} = lists:keyfind("contents.tar.gz", 1, Files),
     Checksum2 = binary_to_list(Checksum),
-    {Version, Checksum2, MetaString, Contents}.
+    ok = verify_version(Version),
+    Meta = decode_meta(MetaString),
+    {Checksum2, Meta, Contents}.
 
 verify_version(?VERSION) -> ok;
 verify_version(Version) -> {error, {unsupported_version, Version}}.
