@@ -3,6 +3,7 @@
 -include_lib("kernel/include/file.hrl").
 
 -define(VERSION, <<"3">>).
+-define(REQUIRED_FILES, lists:sort(["VERSION", "CHECKSUM", "metadata.config", "contents.tar.gz"])).
 -define(METADATA_FIELDS, [name, elixir, version, app, description, files, licenses, maintainers, links, requirements]).
 -define(REQUIREMENT_FIELDS, [app, optional, requirement, repository]).
 
@@ -128,8 +129,16 @@ do_unpack(Tar) ->
     {"contents.tar.gz", Contents} = lists:keyfind("contents.tar.gz", 1, Files),
     Checksum2 = binary_to_list(Checksum),
     ok = verify_version(Version),
+    ok = verify_files(Files),
     Meta = decode_meta(MetaString),
     {Checksum2, Meta, Contents}.
 
 verify_version(?VERSION) -> ok;
 verify_version(Version) -> {error, {unsupported_version, Version}}.
+
+verify_files(Files) ->
+    Filenames = lists:sort(proplists:get_keys(Files)),
+    verify_files(Filenames, ?REQUIRED_FILES).
+
+verify_files(Filenames, Filenames) -> ok;
+verify_files(Filenames, _) -> {error, {invalid_files, Filenames}}.
