@@ -1,5 +1,8 @@
 % Copied from https://github.com/erlang/otp/blob/OTP-20.0.1/lib/stdlib/src/erl_tar.erl
-% with modifications on module name to `hex_erl_tar`
+% with modifications:
+%
+%  - change module name to `hex_erl_tar`
+%  - add `@private`
 
 %%
 %% %CopyrightBegin%
@@ -19,6 +22,8 @@
 %% limitations under the License.
 %%
 %% %CopyrightEnd%
+%%
+%% @private
 %%
 %% This module implements extraction/creation of tar archives.
 %% It supports reading most common tar formats, namely V7, STAR,
