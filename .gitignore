@@ -17,3 +17,4 @@ _build
 rebar3.crashdump
 tmp/
 src/safe_erl_term.erl
+/doc
