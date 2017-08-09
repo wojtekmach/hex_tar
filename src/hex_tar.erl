@@ -4,7 +4,8 @@
 
 -define(VERSION, <<"3">>).
 -define(REQUIRED_FILES, lists:sort(["VERSION", "CHECKSUM", "metadata.config", "contents.tar.gz"])).
--define(METADATA_FIELDS, [name, elixir, version, app, description, files, licenses, maintainers, links, requirements]).
+-define(METADATA_REQUIRED_FIELDS, lists:sort([name, version, app, description, files, licenses, requirements, build_tools])).
+-define(METADATA_OPTIONAL_FIELDS, lists:sort([elixir, maintainers, links, extra])).
 -define(REQUIREMENT_FIELDS, [app, optional, requirement, repository]).
 
 %% create/2, encode_meta/1 based on [1]
@@ -20,8 +21,6 @@
 %%
 %% * investigate if we need `{maps, true}` option to create (was in `Hex.Utils.binarify`)
 %% * add option to `create` that keeps tarball on disk
-%% * verify that all required metadata fields are present
-%% * warn on unknown metadata fields
 %% * add function that verifies checksum
 %% * ensure existing hex packages can be rebuilt and will have the same checksum
 %% * add docs
@@ -42,6 +41,7 @@
 %     {ok, {Tar, Checksum}} = hex_tar:create(Meta, [{"src/foo.erl", "-module(foo)."}])
 %
 create(Meta, Files) ->
+    ok = verify_meta(Meta),
     {name, Name} = lists:keyfind(name, 1, Meta),
     {version, Version} = lists:keyfind(version, 1, Meta),
     ContentsPath = io_lib:format("~s-~s-contents.tar.gz", [Name, Version]),
@@ -131,6 +131,7 @@ do_unpack(Tar) ->
     ok = verify_version(Version),
     ok = verify_files(Files),
     Meta = decode_meta(MetaString),
+    ok = verify_meta(Meta),
     {Checksum2, Meta, Contents}.
 
 verify_version(?VERSION) -> ok;
@@ -142,3 +143,14 @@ verify_files(Files) ->
 
 verify_files(Filenames, Filenames) -> ok;
 verify_files(Filenames, _) -> {error, {invalid_files, Filenames}}.
+
+verify_meta(Meta) ->
+    Fields = lists:sort(proplists:get_keys(Meta)),
+    RequiredFieldsDiff = ?METADATA_REQUIRED_FIELDS -- Fields,
+    UnknownFields = Fields -- (?METADATA_REQUIRED_FIELDS ++ ?METADATA_OPTIONAL_FIELDS),
+
+    case {RequiredFieldsDiff, UnknownFields} of
+        {[], []} -> ok;
+        {RequiredFieldsDiff, []} -> {error, {missing_required_metadata_fields, RequiredFieldsDiff}};
+        {_, UnknownFields} -> {error, {unknown_metadata_fields, UnknownFields}}
+    end.

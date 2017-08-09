@@ -3,7 +3,17 @@
 
 in_memory_test() ->
     %% create
-    Meta = [{name, <<"foo">>}, {version, <<"1.0.0">>}],
+    Meta = [
+            {app, <<"foo">>},
+            {name, <<"foo">>},
+            {version, <<"1.0.0">>},
+            {description, <<"description">>},
+            {build_tools, <<"rebar3">>},
+            {files, [<<"foo.erl">>, <<"bar.erl">>]},
+            {licenses, [<<"Apache 2.0">>]},
+            {requirements, []},
+            {links, {<<"GitHub">>, <<"https://github.com/hexpm/foo">>}}
+           ],
     Files = [
              {"foo.erl", <<"-module(foo).">>},
              {"bar.erl", <<"-module(bar).">>}
@@ -27,7 +37,17 @@ disk_test() ->
     ok = file:write_file("tmp/pkg/bar.erl", <<"-module(bar).">>),
 
     %% create
-    Meta = [{name, <<"foo">>}, {version, <<"1.0.0">>}],
+    Meta = [
+            {app, <<"foo">>},
+            {name, <<"foo">>},
+            {version, <<"1.0.0">>},
+            {description, <<"description">>},
+            {build_tools, <<"rebar3">>},
+            {files, [<<"foo.erl">>, <<"bar.erl">>]},
+            {licenses, [<<"Apache 2.0">>]},
+            {requirements, []},
+            {links, {<<"GitHub">>, <<"https://github.com/hexpm/foo">>}}
+           ],
     Files = [
              {"foo.erl", "tmp/pkg/foo.erl"},
              {"bar.erl", "tmp/pkg/bar.erl"}
