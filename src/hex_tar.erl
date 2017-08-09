@@ -20,7 +20,6 @@
 %% TODO:
 %%
 %% * investigate if we need `{maps, true}` option to create (was in `Hex.Utils.binarify`)
-%% * add option to `create` that keeps tarball on disk
 %% * add function that verifies checksum
 %% * ensure existing hex packages can be rebuilt and will have the same checksum
 %% * add docs
@@ -30,7 +29,7 @@
 %% API functions
 %%====================================================================
 
--export([create/2, unpack/1, unpack/2]).
+-export([create/2, create/3, unpack/1, unpack/2]).
 
 % Examples:
 %
@@ -38,9 +37,16 @@
 %
 %     {ok, {Tar, Checksum}} = hex_tar:create(Meta, [{"src/foo.erl", "tmp/foo/src/foo.erl"}]).
 %
-%     {ok, {Tar, Checksum}} = hex_tar:create(Meta, [{"src/foo.erl", "-module(foo)."}])
+%     {ok, {Tar, Checksum}} = hex_tar:create(Meta, [{"src/foo.erl", "-module(foo)."}]).
 %
 create(Meta, Files) ->
+    create(Meta, Files, []).
+
+% Examples:
+%
+%     {ok, {Tar, Checksum}} = hex_tar:create(Meta, ["src/foo.erl"], [keep_tarball]).
+%
+create(Meta, Files, Options) ->
     ok = verify_meta(Meta),
     {name, Name} = lists:keyfind(name, 1, Meta),
     {version, Version} = lists:keyfind(version, 1, Meta),
@@ -62,15 +68,27 @@ create(Meta, Files) ->
     ok = hex_erl_tar:create(Path, MetaFiles, [verbose]),
     {ok, Tar} = file:read_file(Path),
     file:delete(ContentsPath),
-    file:delete(Path),
+
+    proplists:get_bool(keep_tarball, Options) orelse file:delete(Path),
+
     {ok, {Tar, Checksum}}.
 
-unpack({binary, Tar}) ->
+% Examples:
+%
+%     {ok, {Checksum, Meta, Files}} = hex_tar:unpack({binary, Tar}).
+%
+%     {ok, {Checksum, Meta, Files}} = hex_tar:unpack("foo-1.0.0.tar").
+%
+unpack(Tar) ->
     {Checksum, Meta, Contents} = do_unpack(Tar),
     {ok, Files} = hex_erl_tar:extract({binary, Contents}, [memory, compressed]),
     {ok, {Checksum, Meta, Files}}.
 
-unpack({binary, Tar}, [{destination, Destination}]) ->
+% Examples:
+%
+%     {ok, {Checksum, Meta}} = hex_tar:unpack({binary, Tar}, [{destination, "/tmp/foo/"}]).
+%
+unpack(Tar, [{destination, Destination}]) ->
     {Checksum, Meta, Contents} = do_unpack(Tar),
     ok = hex_erl_tar:extract({binary, Contents}, [compressed, {cwd, Destination}]),
     {ok, {Checksum, Meta}}.
@@ -122,7 +140,7 @@ checksum(MetaString, Contents) ->
     string:to_upper(lists:flatten(io_lib:format("~64.16.0b", [X]))).
 
 do_unpack(Tar) ->
-    {ok, Files} = hex_erl_tar:extract({binary, Tar}, [memory]),
+    {ok, Files} = hex_erl_tar:extract(Tar, [memory]),
     {"VERSION", Version} = lists:keyfind("VERSION", 1, Files),
     {"CHECKSUM", Checksum} = lists:keyfind("CHECKSUM", 1, Files),
     {"metadata.config", MetaString} = lists:keyfind("metadata.config", 1, Files),

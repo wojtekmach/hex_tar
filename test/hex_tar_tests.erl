@@ -52,10 +52,10 @@ disk_test() ->
              {"foo.erl", "tmp/pkg/foo.erl"},
              {"bar.erl", "tmp/pkg/bar.erl"}
             ],
-    {ok, {Tar, Checksum}} = hex_tar:create(Meta, Files),
+    {ok, {_Tar, Checksum}} = hex_tar:create(Meta, Files, [keep_tarball]),
 
     %% extract
-    {ok, {Checksum2, Meta2}} = hex_tar:unpack({binary, Tar}, [{destination, "tmp/pkg_extracted"}]),
+    {ok, {Checksum2, Meta2}} = hex_tar:unpack("foo-1.0.0.tar", [{destination, "tmp/pkg_extracted"}]),
     Checksum = Checksum2,
     Meta = Meta2,
     {ok, <<"-module(foo).">>} = file:read_file("tmp/pkg_extracted/foo.erl"),
@@ -67,4 +67,7 @@ disk_test() ->
               {"bar.erl", "tmp/pkg_extracted/bar.erl"}
              ],
     {ok, {_Tar3, Checksum3}} = hex_tar:create(Meta2, Files2),
-    Checksum2 = Checksum3.
+    Checksum2 = Checksum3,
+
+    %% cleanup
+    file:delete("foo-1.0.0.tar").
