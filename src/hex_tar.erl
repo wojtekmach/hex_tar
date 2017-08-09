@@ -19,7 +19,6 @@
 
 %% TODO:
 %%
-%% * investigate if we need `{maps, true}` option to create (was in `Hex.Utils.binarify`)
 %% * add function that verifies checksum
 %% * ensure existing hex packages can be rebuilt and will have the same checksum
 %% * add docs
@@ -117,10 +116,6 @@ binarify(Term) when is_list(Term) ->
         false ->
             [binarify(X) || X <- Term]
     end;
-binarify(Term) when is_map(Term) ->
-    List = maps:to_list(Term),
-    List2 = lists:map(fun({K, V}) -> binarify({K, V}) end, List),
-    maps:from_list(List2);
 binarify({Key, Value}) ->
     {binarify(Key), binarify(Value)};
 binarify(Term) ->
