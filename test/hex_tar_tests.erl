@@ -11,7 +11,15 @@ in_memory_test() ->
             {build_tools, <<"rebar3">>},
             {files, [<<"foo.erl">>, <<"bar.erl">>]},
             {licenses, [<<"Apache 2.0">>]},
-            {requirements, []},
+            {requirements, [
+                            {<<"bar">>,
+                             [
+                              {app, <<"bar">>},
+                              {optional, false},
+                              {requirement, <<"~> 0.1">>}
+                             ]
+                            }
+                           ]},
             {links, {<<"GitHub">>, <<"https://github.com/hexpm/foo">>}}
            ],
     Files = [
@@ -45,7 +53,15 @@ disk_test() ->
             {build_tools, <<"rebar3">>},
             {files, [<<"foo.erl">>, <<"bar.erl">>]},
             {licenses, [<<"Apache 2.0">>]},
-            {requirements, []},
+            {requirements, [
+                            {<<"bar">>,
+                             [
+                              {app, <<"bar">>},
+                              {optional, false},
+                              {requirement, <<"~> 0.1">>}
+                             ]
+                            }
+                           ]},
             {links, {<<"GitHub">>, <<"https://github.com/hexpm/foo">>}}
            ],
     Files = [

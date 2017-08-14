@@ -6,7 +6,8 @@
 -define(REQUIRED_FILES, lists:sort(["VERSION", "CHECKSUM", "metadata.config", "contents.tar.gz"])).
 -define(METADATA_REQUIRED_FIELDS, lists:sort([name, version, app, description, files, licenses, requirements, build_tools])).
 -define(METADATA_OPTIONAL_FIELDS, lists:sort([elixir, maintainers, links, extra])).
--define(REQUIREMENT_FIELDS, [app, optional, requirement, repository]).
+-define(REQUIREMENT_REQUIRED_FIELDS, lists:sort([app, optional, requirement])).
+-define(REQUIREMENT_OPTIONAL_FIELDS, lists:sort([repository])).
 
 %% create/2, encode_meta/1 based on [1]
 %% binarify/1 based on [2]
@@ -122,13 +123,19 @@ binarify({Key, Value}) ->
 binarify(Term) ->
     Term.
 
-decode_meta(Binary) ->
+decode_meta(Binary) when is_binary(Binary) ->
     String = binary_to_list(Binary),
     {ok, Tokens, _Line} = safe_erl_term:string(String),
     Meta = safe_erl_term:terms(Tokens),
-
+    lists:map(fun(X) -> decode_meta(X) end, Meta);
+decode_meta({<<"requirements">>, Value}) ->
+    {requirements, decode_requirements(Value)};
+decode_meta({Key, Value}) ->
     %% FIXME: avoid binary_to_atom, use whitelist instead
-    lists:map(fun({Key, Value}) -> {erlang:binary_to_atom(Key, unicode), Value} end, Meta).
+    {erlang:binary_to_atom(Key, unicode), Value}.
+
+decode_requirements(Requirements) ->
+    lists:map(fun({Name, Requirement}) -> {Name, lists:map(fun(X) -> decode_meta(X) end, Requirement)} end, Requirements).
 
 checksum(MetaString, Contents) ->
     Blob = <<(?VERSION)/binary, MetaString/binary, Contents/binary>>,
@@ -159,12 +166,25 @@ verify_files(Filenames, Filenames) -> ok;
 verify_files(Filenames, _) -> {error, {invalid_files, Filenames}}.
 
 verify_meta(Meta) ->
-    Fields = lists:sort(proplists:get_keys(Meta)),
-    RequiredFieldsDiff = ?METADATA_REQUIRED_FIELDS -- Fields,
-    UnknownFields = Fields -- (?METADATA_REQUIRED_FIELDS ++ ?METADATA_OPTIONAL_FIELDS),
+    ok = verify_fields(Meta, ?METADATA_REQUIRED_FIELDS, ?METADATA_OPTIONAL_FIELDS),
+    ok = verify_requirements(proplists:get_value(requirements, Meta)).
+
+verify_requirements([Head | Tail]) ->
+    ok = verify_requirement(Head),
+    verify_requirements(Tail);
+verify_requirements([]) ->
+    ok.
+
+verify_requirement({_Name, Requirement}) ->
+    verify_fields(Requirement, ?REQUIREMENT_REQUIRED_FIELDS, ?REQUIREMENT_OPTIONAL_FIELDS).
+
+verify_fields(Data, RequiredFields, OptionalFields) ->
+    Fields = lists:sort(proplists:get_keys(Data)),
+    RequiredFieldsDiff = RequiredFields -- Fields,
+    UnknownFields = Fields -- (RequiredFields ++ OptionalFields),
 
     case {RequiredFieldsDiff, UnknownFields} of
         {[], []} -> ok;
-        {RequiredFieldsDiff, []} -> {error, {missing_required_metadata_fields, RequiredFieldsDiff}};
-        {_, UnknownFields} -> {error, {unknown_metadata_fields, UnknownFields}}
+        {RequiredFieldsDiff, []} -> {error, {missing_required_fields, RequiredFieldsDiff}};
+        {_, UnknownFields} -> {error, {unknown_fields, UnknownFields}}
     end.
