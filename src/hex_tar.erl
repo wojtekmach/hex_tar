@@ -23,6 +23,7 @@
 %% * ensure existing hex packages can be rebuilt and will have the same checksum
 %% * add docs
 %% * add typespes
+%% * add verbose mode?
 
 %%====================================================================
 %% API functions
@@ -64,7 +65,7 @@ create(Meta, Files, Options) ->
                  {"contents.tar.gz", Contents}
                 ],
 
-    ok = hex_erl_tar:create(Path, MetaFiles, [verbose]),
+    ok = hex_erl_tar:create(Path, MetaFiles),
     {ok, Tar} = file:read_file(Path),
     file:delete(ContentsPath),
 
