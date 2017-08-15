@@ -3,6 +3,7 @@
 -include_lib("kernel/include/file.hrl").
 
 -define(VERSION, <<"3">>).
+-define(MAX_SIZE, (8 * 1024 * 1024)).
 -define(REQUIRED_FILES, lists:sort(["VERSION", "CHECKSUM", "metadata.config", "contents.tar.gz"])).
 -define(METADATA_REQUIRED_FIELDS, lists:sort([name, version, app, description, files, licenses, requirements, build_tools])).
 -define(METADATA_OPTIONAL_FIELDS, lists:sort([elixir, maintainers, links, extra])).
@@ -67,6 +68,7 @@ create(Meta, Files, Options) ->
                 ],
 
     ok = hex_erl_tar:create(Path, MetaFiles),
+    ok = verify_size(Path),
     {ok, Tar} = file:read_file(Path),
     file:delete(ContentsPath),
 
@@ -143,6 +145,7 @@ checksum(MetaString, Contents) ->
     string:to_upper(lists:flatten(io_lib:format("~64.16.0b", [X]))).
 
 do_unpack(Tar) ->
+    ok = verify_size(Tar),
     {ok, Files} = hex_erl_tar:extract(Tar, [memory]),
     {"VERSION", Version} = lists:keyfind("VERSION", 1, Files),
     {"CHECKSUM", Checksum} = lists:keyfind("CHECKSUM", 1, Files),
@@ -154,6 +157,15 @@ do_unpack(Tar) ->
     Meta = decode_meta(MetaString),
     ok = verify_meta(Meta),
     {Checksum2, Meta, Contents}.
+
+verify_size({binary, Binary}) ->
+    verify_size(byte_size(Binary));
+verify_size(Filename) when is_list(Filename) ->
+    verify_size(filelib:file_size(Filename));
+verify_size(Size) when Size =< ?MAX_SIZE ->
+    ok;
+verify_size(_) ->
+    {error, too_big}.
 
 verify_version(?VERSION) -> ok;
 verify_version(Version) -> {error, {unsupported_version, Version}}.
