@@ -50,8 +50,7 @@ create(Meta, Files) ->
 %
 create(Meta, Files, Options) ->
     ok = verify_meta(Meta),
-    {name, Name} = lists:keyfind(name, 1, Meta),
-    {version, Version} = lists:keyfind(version, 1, Meta),
+    #{name := Name, version := Version} = Meta,
     ContentsPath = io_lib:format("~s-~s-contents.tar.gz", [Name, Version]),
     Path = io_lib:format("~s-~s.tar", [Name, Version]),
     ok = hex_erl_tar:create(ContentsPath, Files, [compressed]),
@@ -104,7 +103,7 @@ encode_meta(Meta) ->
     Data = lists:map(fun(MetaPair) ->
         String = io_lib_pretty:print(binarify(MetaPair), [{encoding, utf8}]),
         unicode:characters_to_binary([String, ".\n"])
-      end, Meta),
+      end, maps:to_list(Meta)),
     iolist_to_binary(Data).
 
 binarify(Term) when is_boolean(Term) ->
@@ -131,16 +130,22 @@ binarify(Term) ->
 decode_meta(Binary) when is_binary(Binary) ->
     String = binary_to_list(Binary),
     {ok, Tokens, _Line} = safe_erl_term:string(String),
-    Meta = safe_erl_term:terms(Tokens),
-    lists:map(fun(X) -> decode_meta(X) end, Meta);
+    List = safe_erl_term:terms(Tokens),
+    List2 = lists:map(fun({Key, Val}) -> decode_meta({Key, Val}) end, List),
+    maps:from_list(List2);
 decode_meta({<<"requirements">>, Value}) ->
     {requirements, decode_requirements(Value)};
+decode_meta({<<"links">>, Value}) ->
+    {links, maps:from_list(Value)};
 decode_meta({Key, Value}) ->
     %% FIXME: avoid binary_to_atom, use whitelist instead
     {erlang:binary_to_atom(Key, unicode), Value}.
 
 decode_requirements(Requirements) ->
-    lists:map(fun({Name, Requirement}) -> {Name, lists:map(fun(X) -> decode_meta(X) end, Requirement)} end, Requirements).
+    List = lists:map(fun({Name, Requirement}) ->
+                             {Name, maps:from_list(lists:map(fun(X) -> decode_meta(X) end, Requirement))}
+                     end, Requirements),
+    maps:from_list(List).
 
 checksum(MetaString, Contents) ->
     Blob = <<(?VERSION)/binary, MetaString/binary, Contents/binary>>,
@@ -182,19 +187,14 @@ verify_files(Filenames, _) -> {error, {invalid_files, Filenames}}.
 
 verify_meta(Meta) ->
     ok = verify_fields(Meta, ?METADATA_REQUIRED_FIELDS, ?METADATA_OPTIONAL_FIELDS),
-    ok = verify_requirements(proplists:get_value(requirements, Meta)).
+    #{requirements := Requirements} = Meta,
+    ok = verify_requirements(Requirements).
 
-verify_requirements([Head | Tail]) ->
-    ok = verify_requirement(Head),
-    verify_requirements(Tail);
-verify_requirements([]) ->
+verify_requirements(_) ->
     ok.
 
-verify_requirement({_Name, Requirement}) ->
-    verify_fields(Requirement, ?REQUIREMENT_REQUIRED_FIELDS, ?REQUIREMENT_OPTIONAL_FIELDS).
-
-verify_fields(Data, RequiredFields, OptionalFields) ->
-    Fields = lists:sort(proplists:get_keys(Data)),
+verify_fields(Map, RequiredFields, OptionalFields) ->
+    Fields = maps:keys(Map),
     RequiredFieldsDiff = RequiredFields -- Fields,
     UnknownFields = Fields -- (RequiredFields ++ OptionalFields),
 

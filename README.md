@@ -30,7 +30,7 @@ Url = "https://repo.hex.pm/tarballs/mime-1.1.0.tar",
 Inspect package metadata:
 
 ```erlang
-proplists:get_value(description, Meta).
+maps:get(description, Meta).
 %% => <<"A MIME type module for Elixir">>
 ```
 

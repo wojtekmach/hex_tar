@@ -3,25 +3,23 @@
 
 in_memory_test() ->
     %% create
-    Meta = [
-            {app, <<"foo">>},
-            {name, <<"foo">>},
-            {version, <<"1.0.0">>},
-            {description, <<"description">>},
-            {build_tools, <<"rebar3">>},
-            {files, [<<"foo.erl">>, <<"bar.erl">>]},
-            {licenses, [<<"Apache 2.0">>]},
-            {requirements, [
-                            {<<"bar">>,
-                             [
-                              {app, <<"bar">>},
-                              {optional, false},
-                              {requirement, <<"~> 0.1">>}
-                             ]
-                            }
-                           ]},
-            {links, {<<"GitHub">>, <<"https://github.com/hexpm/foo">>}}
-           ],
+    Meta = #{
+        app => <<"foo">>,
+        name => <<"foo">>,
+        version => <<"1.0.0">>,
+        description => <<"description">>,
+        build_tools => <<"rebar3">>,
+        files => [<<"foo.erl">>, <<"bar.erl">>],
+        licenses => [<<"Apache 2.0">>],
+        requirements => #{
+            <<"bar">> => #{
+                app => <<"bar">>,
+                optional => false,
+                requirement => <<"~> 0.1">>
+            }
+        },
+        links => #{<<"GitHub">> => <<"https://github.com/hexpm/foo">>}
+    },
     Files = [
              {"foo.erl", <<"-module(foo).">>},
              {"bar.erl", <<"-module(bar).">>}
@@ -36,7 +34,8 @@ in_memory_test() ->
 
     %% create again
     {ok, {_Tar3, Checksum3}} = hex_tar:create(Meta2, Files2),
-    Checksum2 = Checksum3.
+    Checksum2 = Checksum3,
+    ok.
 
 disk_test() ->
     file:make_dir("tmp"),
@@ -45,25 +44,23 @@ disk_test() ->
     ok = file:write_file("tmp/pkg/bar.erl", <<"-module(bar).">>),
 
     %% create
-    Meta = [
-            {app, <<"foo">>},
-            {name, <<"foo">>},
-            {version, <<"1.0.0">>},
-            {description, <<"description">>},
-            {build_tools, <<"rebar3">>},
-            {files, [<<"foo.erl">>, <<"bar.erl">>]},
-            {licenses, [<<"Apache 2.0">>]},
-            {requirements, [
-                            {<<"bar">>,
-                             [
-                              {app, <<"bar">>},
-                              {optional, false},
-                              {requirement, <<"~> 0.1">>}
-                             ]
-                            }
-                           ]},
-            {links, {<<"GitHub">>, <<"https://github.com/hexpm/foo">>}}
-           ],
+    Meta = #{
+        app => <<"foo">>,
+        name => <<"foo">>,
+        version => <<"1.0.0">>,
+        description => <<"description">>,
+        build_tools => <<"rebar3">>,
+        files => [<<"foo.erl">>, <<"bar.erl">>],
+        licenses => [<<"Apache 2.0">>],
+        requirements => #{
+            <<"bar">> => #{
+                app => <<"bar">>,
+                optional => false,
+                requirement => <<"~> 0.1">>
+            }
+        },
+        links => #{<<"GitHub">> => <<"https://github.com/hexpm/foo">>}
+    },
     Files = [
              {"foo.erl", "tmp/pkg/foo.erl"},
              {"bar.erl", "tmp/pkg/bar.erl"}
