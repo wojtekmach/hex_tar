@@ -137,6 +137,8 @@ decode_meta({<<"requirements">>, Value}) ->
     {requirements, decode_requirements(Value)};
 decode_meta({<<"links">>, Value}) ->
     {links, maps:from_list(Value)};
+decode_meta({<<"extra">>, Value}) ->
+    {extra, maps:from_list(Value)};
 decode_meta({Key, Value}) ->
     %% FIXME: avoid binary_to_atom, use whitelist instead
     {erlang:binary_to_atom(Key, unicode), Value}.

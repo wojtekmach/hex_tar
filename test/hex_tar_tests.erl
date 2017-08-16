@@ -10,6 +10,7 @@ fixture_meta() ->
         build_tools => <<"rebar3">>,
         files => [<<"foo.erl">>, <<"bar.erl">>],
         licenses => [<<"Apache 2.0">>],
+        maintainers => [<<"Wojtek Mach">>],
         requirements => #{
             <<"bar">> => #{
                 app => <<"bar">>,
@@ -17,7 +18,8 @@ fixture_meta() ->
                 requirement => <<"~> 0.1">>
             }
         },
-        links => #{<<"GitHub">> => <<"https://github.com/hexpm/foo">>}
+        links => #{<<"GitHub">> => <<"https://github.com/hexpm/foo">>},
+        extra => #{<<"foo">> => <<"bar">>}
     }.
 
 in_memory_test() ->
