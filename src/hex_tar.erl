@@ -120,6 +120,9 @@ binarify(Term) when is_list(Term) ->
         false ->
             [binarify(X) || X <- Term]
     end;
+binarify(Term) when is_map(Term) ->
+    List = maps:to_list(Term),
+    lists:map(fun({K, V}) -> binarify({K, V}) end, List);
 binarify({Key, Value}) ->
     {binarify(Key), binarify(Value)};
 binarify(Term) ->
