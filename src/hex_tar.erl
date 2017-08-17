@@ -22,6 +22,7 @@
 %% TODO:
 %%
 %% * add function that verifies checksum
+%% * guess build tools
 %% * ensure existing hex packages can be rebuilt and will have the same checksum
 %% * add docs
 %% * add typespes
