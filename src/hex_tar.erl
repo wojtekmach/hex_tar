@@ -25,7 +25,7 @@
 %% * ensure existing hex packages can be rebuilt and will have the same checksum
 %% * add docs
 %% * add typespes
-%% * add verbose mode?
+%% * (maybe) perform stricter validations on shape of requirements/links/extra etc
 
 %%====================================================================
 %% API functions
@@ -133,11 +133,11 @@ decode_meta(Binary) when is_binary(Binary) ->
     List = safe_erl_term:terms(Tokens),
     List2 = lists:map(fun({Key, Val}) -> decode_meta({Key, Val}) end, List),
     maps:from_list(List2);
-decode_meta({<<"requirements">>, Value}) ->
+decode_meta({<<"requirements">>, Value}) when is_list(Value) ->
     {requirements, decode_requirements(Value)};
-decode_meta({<<"links">>, Value}) ->
+decode_meta({<<"links">>, Value}) when is_list(Value) ->
     {links, maps:from_list(Value)};
-decode_meta({<<"extra">>, Value}) ->
+decode_meta({<<"extra">>, Value}) when is_list(Value) ->
     {extra, maps:from_list(Value)};
 decode_meta({Key, Value}) ->
     %% FIXME: avoid binary_to_atom, use whitelist instead
