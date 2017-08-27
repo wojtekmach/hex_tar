@@ -21,6 +21,8 @@
 
 %% TODO:
 %%
+%% * vendor latest hex_erl_tar from hex master
+%% * use hex_erl_tar:open to not trigger different tar format (https://github.com/hexpm/hex/blob/v0.16.1/lib/hex/tar.ex#L32)
 %% * add function that verifies checksum
 %% * guess build tools
 %% * ensure existing hex packages can be rebuilt and will have the same checksum
