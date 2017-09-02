@@ -147,10 +147,15 @@ decode_meta({Key, Value}) ->
     {erlang:binary_to_atom(Key, unicode), Value}.
 
 decode_requirements(Requirements) ->
-    List = lists:map(fun({Name, Requirement}) ->
-                             {Name, maps:from_list(lists:map(fun(X) -> decode_meta(X) end, Requirement))}
-                     end, Requirements),
+    List = lists:map(fun decode_requirement/1, Requirements),
     maps:from_list(List).
+
+decode_requirement({Name, Options}) when is_binary(Name) and is_list(Options) ->
+    {Name, maps:from_list(lists:map(fun(X) -> decode_meta(X) end, Options))};
+decode_requirement(Options) when is_list(Options) ->
+    {_, Name} = lists:keyfind(<<"name">>, 1, Options),
+    Options2 = proplists:delete(<<"name">>, Options),
+    decode_requirement({Name, Options2}).
 
 checksum(MetaString, Contents) ->
     Blob = <<(?VERSION)/binary, MetaString/binary, Contents/binary>>,
