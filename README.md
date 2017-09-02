@@ -1,5 +1,5 @@
-HexTar
-======
+hex_tar
+=======
 
 **Warning: Work in progress**
 
