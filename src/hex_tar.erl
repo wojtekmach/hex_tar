@@ -9,6 +9,7 @@
 -define(METADATA_OPTIONAL_FIELDS, lists:sort([elixir, maintainers, links, extra])).
 -define(REQUIREMENT_REQUIRED_FIELDS, lists:sort([app, optional, requirement])).
 -define(REQUIREMENT_OPTIONAL_FIELDS, lists:sort([repository])).
+-define(BUILD_TOOLS, [<<"make">>, <<"mix">>, <<"rebar">>, <<"rebar3">>]).
 
 %% create/2, encode_meta/1 based on [1]
 %% binarify/1 based on [2]
@@ -21,6 +22,8 @@
 
 %% TODO:
 %%
+%% * guess build tools
+%% * make sure metadata files match files in contents
 %% * use hex_erl_tar:open to not trigger different tar format (https://github.com/hexpm/hex/blob/v0.16.1/lib/hex/tar.ex#L32)
 %% * add function that verifies checksum
 %% * guess build tools
@@ -135,6 +138,8 @@ decode_meta(Binary) when is_binary(Binary) ->
     List = safe_erl_term:terms(Tokens),
     List2 = lists:map(fun({Key, Val}) -> decode_meta({Key, Val}) end, List),
     maps:from_list(List2);
+decode_meta({<<"build_tools">>, Value}) when is_list(Value) ->
+    {build_tools, decode_build_tools(Value)};
 decode_meta({<<"requirements">>, Value}) when is_list(Value) ->
     {requirements, decode_requirements(Value)};
 decode_meta({<<"links">>, Value}) when is_list(Value) ->
@@ -144,6 +149,10 @@ decode_meta({<<"extra">>, Value}) when is_list(Value) ->
 decode_meta({Key, Value}) ->
     %% FIXME: avoid binary_to_atom, use whitelist instead
     {erlang:binary_to_atom(Key, unicode), Value}.
+
+decode_build_tools(BuildTools) ->
+    ok = verify_build_tools(BuildTools),
+    lists:map(fun(Name) -> erlang:binary_to_atom(Name, unicode) end, BuildTools).
 
 decode_requirements(Requirements) ->
     List = lists:map(fun decode_requirement/1, Requirements),
@@ -198,6 +207,13 @@ verify_meta(Meta) ->
     ok = verify_fields(Meta, ?METADATA_REQUIRED_FIELDS, ?METADATA_OPTIONAL_FIELDS),
     #{requirements := Requirements} = Meta,
     ok = verify_requirements(Requirements).
+
+verify_build_tools(BuildTools) ->
+    UnknownBuildTools = BuildTools -- ?BUILD_TOOLS,
+    case UnknownBuildTools of
+        [] -> ok;
+        _ -> {error, {unknown_build_tools, UnknownBuildTools}}
+    end.
 
 verify_requirements(_) ->
     ok.

@@ -7,7 +7,7 @@ fixture_meta() ->
         name => <<"foo">>,
         version => <<"1.0.0">>,
         description => <<"description">>,
-        build_tools => <<"rebar3">>,
+        build_tools => [rebar3],
         files => [<<"foo.erl">>, <<"bar.erl">>],
         licenses => [<<"Apache 2.0">>],
         maintainers => [<<"Wojtek Mach">>],
