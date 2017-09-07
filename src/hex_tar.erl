@@ -10,6 +10,16 @@
 -define(REQUIREMENT_REQUIRED_FIELDS, lists:sort([app, optional, requirement])).
 -define(REQUIREMENT_OPTIONAL_FIELDS, lists:sort([repository])).
 -define(BUILD_TOOLS, [<<"make">>, <<"mix">>, <<"rebar">>, <<"rebar3">>]).
+-define(BUILD_TOOLS_FILES, [
+                            {"mix.exs", mix},
+                            {"rebar", rebar3},
+                            {"rebar.lock", rebar3},
+                            {"rebar.config", rebar3},
+                            {"rebar.config.script", rebar3},
+                            {"erlang.mk", make},
+                            {"Makefile", make},
+                            {"Makefile.win", make}
+                           ]).
 
 %% create/2, encode_meta/1 based on [1]
 %% binarify/1 based on [2]
@@ -22,7 +32,6 @@
 
 %% TODO:
 %%
-%% * guess build tools
 %% * make sure metadata files match files in contents
 %% * use hex_erl_tar:open to not trigger different tar format (https://github.com/hexpm/hex/blob/v0.16.1/lib/hex/tar.ex#L32)
 %% * add function that verifies checksum
@@ -53,7 +62,8 @@ create(Meta, Files) ->
 %
 %     {ok, {Tar, Checksum}} = hex_tar:create(Meta, ["src/foo.erl"], [keep_tarball]).
 %
-create(Meta, Files, Options) ->
+create(Meta_, Files, Options) ->
+    Meta = guess_build_tools(Meta_, Files),
     ok = verify_meta(Meta),
     #{name := Name, version := Version} = Meta,
     ContentsPath = io_lib:format("~s-~s-contents.tar.gz", [Name, Version]),
@@ -165,6 +175,18 @@ decode_requirement(Options) when is_list(Options) ->
     Options2 = proplists:delete(<<"name">>, Options),
     decode_requirement({Name, Options2}).
 
+guess_build_tools(#{build_tools := BuildTools} = Meta, _Files) when is_list(BuildTools) ->
+    Meta;
+guess_build_tools(Meta, Files) ->
+    BaseFiles = [File || File <- filenames(Files), filename:dirname(File) == "."],
+    Tools = lists:usort([Tool || {File, Tool} <- ?BUILD_TOOLS_FILES, lists:member(File, BaseFiles)]),
+    Meta#{build_tools => Tools}.
+
+filenames(Files) ->
+    lists:map(fun({File, _Content}) -> File;
+                 (Filename) -> Filename
+              end, Files).
+
 checksum(MetaString, Contents) ->
     Blob = <<(?VERSION)/binary, MetaString/binary, Contents/binary>>,
     <<X:256/big-unsigned-integer>> = crypto:hash(sha256, Blob),
@@ -181,8 +203,9 @@ do_unpack(Tar) ->
     ok = verify_version(Version),
     ok = verify_files(Files),
     Meta = decode_meta(MetaString),
-    ok = verify_meta(Meta),
-    {Checksum2, Meta, Contents}.
+    Meta2 = guess_build_tools(Meta, Files),
+    ok = verify_meta(Meta2),
+    {Checksum2, Meta2, Contents}.
 
 verify_size({binary, Binary}) ->
     verify_size(byte_size(Binary));

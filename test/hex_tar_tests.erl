@@ -73,3 +73,25 @@ disk_test() ->
 
     %% cleanup
     file:delete("foo-1.0.0.tar").
+
+guess_build_tools_test() ->
+    Meta = fixture_meta(),
+
+    Meta2 = roundtrip_meta(maps:remove(build_tools, Meta),
+                           [{"rebar.config", <<"">>}, {"rebar.lock", <<"">>}]),
+    [rebar3] = maps:get(build_tools, Meta2),
+
+    Meta3 = roundtrip_meta(maps:remove(build_tools, Meta),
+                           ["rebar.config"]),
+    [rebar3] = maps:get(build_tools, Meta3),
+
+    Meta4 = roundtrip_meta(maps:remove(build_tools, Meta),
+                           []),
+    [] = maps:get(build_tools, Meta4),
+
+    ok.
+
+roundtrip_meta(Meta, Files) ->
+    {ok, {Tar, _Checksum}} = hex_tar:create(Meta, Files),
+    {ok, {_Checksum, Meta2, _Files}} = hex_tar:unpack({binary, Tar}),
+    Meta2.
