@@ -5,6 +5,7 @@
 -define(VERSION, <<"3">>).
 -define(MAX_SIZE, (8 * 1024 * 1024)).
 -define(REQUIRED_FILES, lists:sort(["VERSION", "CHECKSUM", "metadata.config", "contents.tar.gz"])).
+-define(RESERVED_FILES, ["hex_metadata.config"]).
 -define(METADATA_REQUIRED_FIELDS, lists:sort([name, version, app, description, files, licenses, requirements, build_tools])).
 -define(METADATA_OPTIONAL_FIELDS, lists:sort([elixir, maintainers, links, extra])).
 -define(REQUIREMENT_REQUIRED_FIELDS, lists:sort([app, optional, requirement])).
@@ -65,6 +66,7 @@ create(Meta, Files) ->
 create(Meta_, Files, Options) ->
     Meta = guess_build_tools(Meta_, Files),
     ok = verify_meta(Meta),
+    ok = verify_reserved_files(Files),
     #{name := Name, version := Version} = Meta,
     ContentsPath = io_lib:format("~s-~s-contents.tar.gz", [Name, Version]),
     Path = io_lib:format("~s-~s.tar", [Name, Version]),
@@ -108,6 +110,7 @@ unpack(Tar) ->
 unpack(Tar, [{destination, Destination}]) ->
     {Checksum, Meta, MetaString, Contents} = do_unpack(Tar),
     ok = hex_erl_tar:extract({binary, Contents}, [compressed, {cwd, Destination}]),
+    copy_hex_metadata_config(MetaString, Destination ++ "/hex_metadata.config"),
     {ok, {Checksum, Meta}}.
 
 %%====================================================================
@@ -207,6 +210,14 @@ do_unpack(Tar) ->
     ok = verify_meta(Meta2),
     {Checksum2, Meta2, MetaString, Contents}.
 
+copy_hex_metadata_config(MetaString, Filename) ->
+    case filelib:is_file(Filename) of
+        true ->
+            ok = io:format([Filename, " already exists!~n"]);
+        false ->
+            ok = file:write_file(Filename, MetaString)
+    end.
+
 verify_size({binary, Binary}) ->
     verify_size(byte_size(Binary));
 verify_size(Filename) when is_list(Filename) ->
@@ -225,6 +236,22 @@ verify_files(Files) ->
 
 verify_files(Filenames, Filenames) -> ok;
 verify_files(Filenames, _) -> {error, {invalid_files, Filenames}}.
+
+verify_reserved_files(Filenames) ->
+    case lists:flatmap(fun verify_reserved_file/1, Filenames) of
+        [] ->
+            ok;
+        Filenames2 ->
+            {error, {reserved_filenames, Filenames2}}
+    end.
+
+verify_reserved_file({Filename, _Content}) ->
+    verify_reserved_file(Filename);
+verify_reserved_file(Filename) ->
+    case lists:member(Filename, ?RESERVED_FILES) of
+        true -> [Filename];
+        false -> []
+    end.
 
 verify_meta(Meta) ->
     ok = verify_fields(Meta, ?METADATA_REQUIRED_FIELDS, ?METADATA_OPTIONAL_FIELDS),

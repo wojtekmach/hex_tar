@@ -62,6 +62,7 @@ disk_test() ->
     Meta = Meta2,
     {ok, <<"-module(foo).">>} = file:read_file("tmp/pkg_extracted/foo.erl"),
     {ok, <<"-module(bar).">>} = file:read_file("tmp/pkg_extracted/bar.erl"),
+    true = filelib:is_file("tmp/pkg_extracted/hex_metadata.config"),
 
     %% create again
     Files2 = [
