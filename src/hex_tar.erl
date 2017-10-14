@@ -97,7 +97,7 @@ create(Meta_, Files, Options) ->
 %     {ok, {Checksum, Meta, Files}} = hex_tar:unpack("foo-1.0.0.tar").
 %
 unpack(Tar) ->
-    {Checksum, Meta, Contents} = do_unpack(Tar),
+    {Checksum, Meta, _MetaString, Contents} = do_unpack(Tar),
     {ok, Files} = hex_erl_tar:extract({binary, Contents}, [memory, compressed]),
     {ok, {Checksum, Meta, Files}}.
 
@@ -106,7 +106,7 @@ unpack(Tar) ->
 %     {ok, {Checksum, Meta}} = hex_tar:unpack({binary, Tar}, [{destination, "/tmp/foo/"}]).
 %
 unpack(Tar, [{destination, Destination}]) ->
-    {Checksum, Meta, Contents} = do_unpack(Tar),
+    {Checksum, Meta, MetaString, Contents} = do_unpack(Tar),
     ok = hex_erl_tar:extract({binary, Contents}, [compressed, {cwd, Destination}]),
     {ok, {Checksum, Meta}}.
 
@@ -205,7 +205,7 @@ do_unpack(Tar) ->
     Meta = decode_meta(MetaString),
     Meta2 = guess_build_tools(Meta, Files),
     ok = verify_meta(Meta2),
-    {Checksum2, Meta2, Contents}.
+    {Checksum2, Meta2, MetaString, Contents}.
 
 verify_size({binary, Binary}) ->
     verify_size(byte_size(Binary));
