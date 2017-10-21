@@ -185,10 +185,11 @@ guess_build_tools(Meta, Files) ->
     Tools = lists:usort([Tool || {File, Tool} <- ?BUILD_TOOLS_FILES, lists:member(File, BaseFiles)]),
     Meta#{build_tools => Tools}.
 
-filenames(Files) ->
-    lists:map(fun({File, _Content}) -> File;
-                 (Filename) -> Filename
-              end, Files).
+filenames(FilenamesOrFiles) ->
+    lists:map(fun filename/1, FilenamesOrFiles).
+
+filename({Filename, _Content}) -> Filename;
+filename(Filename) -> Filename.
 
 checksum(MetaString, Contents) ->
     Blob = <<(?VERSION)/binary, MetaString/binary, Contents/binary>>,
@@ -245,10 +246,8 @@ verify_reserved_files(Filenames) ->
             {error, {reserved_filenames, Filenames2}}
     end.
 
-verify_reserved_file({Filename, _Content}) ->
-    verify_reserved_file(Filename);
 verify_reserved_file(Filename) ->
-    case lists:member(Filename, ?RESERVED_FILES) of
+    case lists:member(filename(Filename), ?RESERVED_FILES) of
         true -> [Filename];
         false -> []
     end.
