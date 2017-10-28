@@ -8,7 +8,7 @@ fixture_meta() ->
         version => <<"1.0.0">>,
         description => <<"description">>,
         build_tools => [rebar3],
-        files => [<<"foo.erl">>, <<"bar.erl">>],
+        files => [<<"rebar.config">>, <<"foo.erl">>, <<"bar.erl">>],
         licenses => [<<"Apache 2.0">>],
         maintainers => [<<"Wojtek Mach">>],
         requirements => #{
@@ -26,6 +26,7 @@ in_memory_test() ->
     %% create
     Meta = fixture_meta(),
     Files = [
+             {"rebar.config", <<"">>},
              {"foo.erl", <<"-module(foo).">>},
              {"bar.erl", <<"-module(bar).">>}
             ],
@@ -45,12 +46,14 @@ in_memory_test() ->
 disk_test() ->
     file:make_dir("tmp"),
     file:make_dir("tmp/pkg"),
+    ok = file:write_file("tmp/pkg/rebar.config", <<"">>),
     ok = file:write_file("tmp/pkg/foo.erl", <<"-module(foo).">>),
     ok = file:write_file("tmp/pkg/bar.erl", <<"-module(bar).">>),
 
     %% create
     Meta = fixture_meta(),
     Files = [
+             {"rebar.config", "tmp/pkg/rebar.config"},
              {"foo.erl", "tmp/pkg/foo.erl"},
              {"bar.erl", "tmp/pkg/bar.erl"}
             ],
@@ -60,12 +63,14 @@ disk_test() ->
     {ok, {Checksum2, Meta2}} = hex_tar:unpack("foo-1.0.0.tar", [{destination, "tmp/pkg_extracted"}]),
     Checksum = Checksum2,
     Meta = Meta2,
+    {ok, <<"">>} = file:read_file("tmp/pkg_extracted/rebar.config"),
     {ok, <<"-module(foo).">>} = file:read_file("tmp/pkg_extracted/foo.erl"),
     {ok, <<"-module(bar).">>} = file:read_file("tmp/pkg_extracted/bar.erl"),
     true = filelib:is_file("tmp/pkg_extracted/hex_metadata.config"),
 
     %% create again
     Files2 = [
+              {"rebar.config", "tmp/pkg_extracted/rebar.config"},
               {"foo.erl", "tmp/pkg_extracted/foo.erl"},
               {"bar.erl", "tmp/pkg_extracted/bar.erl"}
              ],
@@ -78,17 +83,13 @@ disk_test() ->
 guess_build_tools_test() ->
     Meta = fixture_meta(),
 
-    Meta2 = roundtrip_meta(maps:remove(build_tools, Meta),
-                           [{"rebar.config", <<"">>}, {"rebar.lock", <<"">>}]),
-    [rebar3] = maps:get(build_tools, Meta2),
+    Meta2 = maps:put(files, [<<"rebar.config">>], maps:remove(build_tools, Meta)),
+    Meta2Result = roundtrip_meta(Meta2, [{"rebar.config", <<"">>}]),
+    [rebar3] = maps:get(build_tools, Meta2Result),
 
-    Meta3 = roundtrip_meta(maps:remove(build_tools, Meta),
-                           ["rebar.config"]),
-    [rebar3] = maps:get(build_tools, Meta3),
-
-    Meta4 = roundtrip_meta(maps:remove(build_tools, Meta),
-                           []),
-    [] = maps:get(build_tools, Meta4),
+    Meta3 = maps:put(files, [], maps:remove(build_tools, Meta)),
+    Meta3Result = roundtrip_meta(Meta3, []),
+    [] = maps:get(build_tools, Meta3Result),
 
     ok.
 

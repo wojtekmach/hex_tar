@@ -33,7 +33,6 @@
 
 %% TODO:
 %%
-%% * make sure metadata files match files in contents
 %% * use hex_erl_tar:open to not trigger different tar format (https://github.com/hexpm/hex/blob/v0.16.1/lib/hex/tar.ex#L32)
 %% * add function that verifies checksum
 %% * guess build tools
@@ -66,6 +65,7 @@ create(Meta, Files) ->
 create(Meta_, Files, Options) ->
     Meta = guess_build_tools(Meta_, Files),
     ok = verify_meta(Meta),
+    ok = verify_contents_files(Meta, Files),
     ok = verify_reserved_files(Files),
     #{name := Name, version := Version} = Meta,
     ContentsPath = io_lib:format("~s-~s-contents.tar.gz", [Name, Version]),
@@ -237,6 +237,18 @@ verify_files(Files) ->
 
 verify_files(Filenames, Filenames) -> ok;
 verify_files(Filenames, _) -> {error, {invalid_files, Filenames}}.
+
+verify_contents_files(Meta, FilenamesOrFiles) ->
+    MetaFilenames = maps:get(files, Meta),
+    Filenames = filenames(FilenamesOrFiles),
+    BinaryFilenames = lists:map(fun list_to_binary/1, Filenames),
+
+    case MetaFilenames == BinaryFilenames of
+        true ->
+            ok;
+        false ->
+            {error, {files_mismatch, MetaFilenames, BinaryFilenames}}
+    end.
 
 verify_reserved_files(Filenames) ->
     case lists:flatmap(fun verify_reserved_file/1, Filenames) of
