@@ -1,1 +1,1 @@
-Replaced by https://github.com/wojtekmach/hex_erl.
+Replaced by https://github.com/hexpm/hex_erl.
